@@ -1,0 +1,7 @@
+@startuml VROOOMVROOMDIGGERUML
+
+class socket
+class test
+
+
+@enduml

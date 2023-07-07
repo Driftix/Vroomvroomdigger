@@ -1,0 +1,116 @@
+@()
+
+@main("Welcome to Play") {
+  <!-- <h1>Welcome to Play!</h1> -->
+
+  <!DOCTYPE html>
+<html>
+<head>
+    <title>Exemple de page d'accueil</title>
+</head>
+<body>
+  <p>Score: <a id="score">0</a></p>
+  <canvas id="gameCanvas" ></canvas>
+  
+    <script>
+
+    var canvas = document.getElementById("gameCanvas");
+    var ctx = canvas.getContext("2d");
+    var socket = new WebSocket("ws://" + location.host + "/ws/home");
+
+    // Ajuste la taille du canvas à la taille de l'écran
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Position et vitesse du joueur
+    var playerX = canvas.width / 2;
+    var playerY = canvas.height / 2;
+    var playerSpeed = 0;
+    var playerAngle = 0;
+    var playerWidth = 40;   // Largeur de la voiture en pixels
+    var playerHeight = 80; // Hauteur de la voiture en pixels
+    
+
+    var keys = {
+      z: false,
+      s: false,
+      q: false,
+      d: false,
+      space: false
+    };
+
+    socket.onopen = function(event) {
+      console.log("Connexion WebSocket ouverte !");
+      drawGame();
+
+    };
+
+    socket.onmessage = function(event) {
+      var message = event.data;
+      message = JSON.parse(message);
+      playerSpeed = message.newPos.playerSpeed
+      playerX = message.newPos.playerX;
+      playerY = message.newPos.playerY;
+      playerAngle = message.newPos.playerAngle;
+      console.log(message)
+      document.getElementById("score").textContent = message.newPos.score;
+    };
+    
+
+    function drawGame() {
+      canvas.width = window.innerWidth - 30;
+      canvas.height = window.innerHeight -100;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updatePlayerPosition();
+      drawPlayer();
+
+      requestAnimationFrame(drawGame);
+    }
+
+  
+
+    function drawPlayer() {
+      ctx.save();
+      ctx.translate(playerX, playerY);
+      ctx.rotate(playerAngle);
+      ctx.fillRect(-playerWidth / 2, -playerHeight / 2, playerWidth, playerHeight);
+      ctx.restore();
+    }
+    function updatePlayerPosition() {
+      let data = {
+        "event" : "move",
+        "key" : JSON.stringify(keys),
+        "coordinates" : [playerX, playerY],
+        "playerAngle" : playerAngle,
+        "playerSpeed": playerSpeed
+      }
+      socket.send(JSON.stringify(data));
+    }
+    // Fonction pour détecter les touches enfoncées
+    function keyDownHandler(event) {
+        if (event.key === " ") {
+            keys["space"] = true;
+        } else {
+            keys[event.key.toLowerCase()] = true;
+        }
+    }
+
+    // Fonction pour détecter les touches relâchées
+    function keyUpHandler(event) {
+        if (event.key === " ") {
+            keys["space"] = false;
+        } else {
+            keys[event.key.toLowerCase()] = false;
+        }
+    }
+
+    document.addEventListener("keydown", keyDownHandler);
+    document.addEventListener("keyup", keyUpHandler);
+
+  </script>
+
+</body>
+</html>
+
+}
